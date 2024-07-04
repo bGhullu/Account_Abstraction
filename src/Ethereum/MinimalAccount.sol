@@ -12,6 +12,8 @@ import {IEntryPoint} from "lib/account-abstraction/contracts/interfaces/IEntryPo
 
 contract MinimalAccount is IAccount, Ownable {
     error MinimalAccount_NotFromEntryPoint();
+    error MinimalAccount_NotFromEntryPointOwner();
+    error MinimalAccount_CallFailed(bytes);
 
     IEntryPoint private immutable i_entryPoint;
 
@@ -22,8 +24,30 @@ contract MinimalAccount is IAccount, Ownable {
         _;
     }
 
+    modifier requireFromEntryPointOwner() {
+        if (msg.sender != address(i_entryPoint) && msg.sender != owner()) {
+            revert MinimalAccount_NotFromEntryPointOwner();
+        }
+        _;
+    }
+
     constructor(address entryPoint) Ownable(msg.sender) {
         i_entryPoint = IEntryPoint(entryPoint);
+    }
+
+    receive() external payable {}
+
+    function execute(
+        address dest,
+        uint256 value,
+        bytes calldata functionData
+    ) external requireFromEntryPointOwner {
+        (bool success, bytes memory result) = dest.call{value: value}(
+            functionData
+        );
+        if (!success) {
+            revert MinimalAccount_CallFailed(result);
+        }
     }
 
     function validateUserOp(

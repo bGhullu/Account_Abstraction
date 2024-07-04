@@ -17,7 +17,7 @@ contract MinimalAccount is IAccount, Ownable {
         bytes32 userOpHash,
         uint256 missingAccountFunds
     ) external returns (uint256 validationData) {
-        _validateSignature(userOp, userOpHash);
+        validationData = _validateSignature(userOp, userOpHash);
     }
 
     function _validateSignature(

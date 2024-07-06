@@ -13,6 +13,7 @@ contract MinimalAccountTest is Test {
 
     MinimalAccount minimalAccount;
     ERC20Mock usdc;
+    address randomUser = makeAddr("randomUser");
 
     uint256 constant AMOUNT = 1e18;
 
@@ -45,5 +46,21 @@ contract MinimalAccountTest is Test {
 
         // Assert
         assertEq(usdc.balanceOf(address(minimalAccount)), AMOUNT);
+    }
+
+    function testNonOwnerCannotExecuteCommands() public {
+        assertEq(usdc.balanceOf(address(minimalAccount)), 0);
+        address dest = address(usdc);
+        uint256 value = 0;
+        bytes memory functionData = abi.encodeWithSelector(
+            ERC20Mock.mint.selector,
+            address(minimalAccount),
+            AMOUNT
+        );
+        vm.prank(randomUser);
+        vm.expectRevert(
+            MinimalAccount.MinimalAccount_NotFromEntryPointOwner.selector
+        );
+        minimalAccount.execute(dest, value, functionData);
     }
 }
